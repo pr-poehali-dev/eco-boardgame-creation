@@ -1,502 +1,461 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 
-interface Mission {
+interface Territory {
   id: number;
-  title: string;
-  description: string;
-  category: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  points: number;
-  progress: number;
-  icon: string;
-  completed: boolean;
+  name: string;
+  pollution: number;
+  greenery: number;
+  owner: string | null;
+  type: 'forest' | 'city' | 'water' | 'desert';
 }
 
-interface Achievement {
+interface Competitor {
   id: number;
-  title: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
+  name: string;
+  color: string;
+  score: number;
+  territories: number;
+  avatar: string;
 }
 
-interface EcoFact {
-  id: number;
-  title: string;
-  content: string;
-  category: string;
+interface GameAction {
+  type: 'clean' | 'plant' | 'build';
+  name: string;
+  energyCost: number;
+  effect: string;
   icon: string;
 }
 
 const Index = () => {
-  const [userLevel, setUserLevel] = useState(5);
-  const [userPoints, setUserPoints] = useState(1250);
-  const [levelProgress, setLevelProgress] = useState(45);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [roundTime, setRoundTime] = useState(180);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [playerEnergy, setPlayerEnergy] = useState(100);
+  const [playerScore, setPlayerScore] = useState(0);
+  const [selectedTerritory, setSelectedTerritory] = useState<number | null>(null);
+  const [showIntro, setShowIntro] = useState(true);
 
-  const [missions, setMissions] = useState<Mission[]>([
-    {
-      id: 1,
-      title: 'Раздельный сбор отходов',
-      description: 'Начни сортировать мусор дома: бумага, пластик, стекло',
-      category: 'Переработка',
-      difficulty: 'easy',
-      points: 100,
-      progress: 75,
-      icon: 'Recycle',
-      completed: false
-    },
-    {
-      id: 2,
-      title: 'Неделя без пластика',
-      description: 'Откажись от одноразового пластика на 7 дней',
-      category: 'Потребление',
-      difficulty: 'medium',
-      points: 200,
-      progress: 40,
-      icon: 'ShoppingBag',
-      completed: false
-    },
-    {
-      id: 3,
-      title: 'Экономия воды',
-      description: 'Сократи расход воды на 30% за месяц',
-      category: 'Ресурсы',
-      difficulty: 'medium',
-      points: 150,
-      progress: 60,
-      icon: 'Droplet',
-      completed: false
-    },
-    {
-      id: 4,
-      title: 'Посади дерево',
-      description: 'Посади дерево или примі участие в субботнике',
-      category: 'Природа',
-      difficulty: 'hard',
-      points: 300,
-      progress: 0,
-      icon: 'TreePine',
-      completed: false
-    },
-    {
-      id: 5,
-      title: 'Велосипед вместо авто',
-      description: 'Используй велосипед или общественный транспорт неделю',
-      category: 'Транспорт',
-      difficulty: 'medium',
-      points: 180,
-      progress: 20,
-      icon: 'Bike',
-      completed: false
-    },
-    {
-      id: 6,
-      title: 'Энергоэффективность',
-      description: 'Замени 3 лампы на энергосберегающие',
-      category: 'Энергия',
-      difficulty: 'easy',
-      points: 120,
-      progress: 0,
-      icon: 'Lightbulb',
-      completed: false
-    }
+  const [territories, setTerritories] = useState<Territory[]>([
+    { id: 1, name: 'Северный лес', pollution: 60, greenery: 20, owner: null, type: 'forest' },
+    { id: 2, name: 'Мегаполис-Центр', pollution: 80, greenery: 10, owner: null, type: 'city' },
+    { id: 3, name: 'Восточная река', pollution: 70, greenery: 15, owner: null, type: 'water' },
+    { id: 4, name: 'Южная пустошь', pollution: 90, greenery: 5, owner: null, type: 'desert' },
+    { id: 5, name: 'Западный парк', pollution: 40, greenery: 40, owner: null, type: 'forest' },
+    { id: 6, name: 'Промзона', pollution: 95, greenery: 5, owner: null, type: 'city' },
+    { id: 7, name: 'Озеро Кристалл', pollution: 50, greenery: 30, owner: null, type: 'water' },
+    { id: 8, name: 'Горная долина', pollution: 30, greenery: 50, owner: null, type: 'forest' },
   ]);
 
-  const [achievements, setAchievements] = useState<Achievement[]>([
-    {
-      id: 1,
-      title: 'Эко-новичок',
-      description: 'Выполни первую миссию',
-      icon: 'Seedling',
-      unlocked: true
-    },
-    {
-      id: 2,
-      title: 'Хранитель воды',
-      description: 'Сэкономь 1000 литров воды',
-      icon: 'Droplet',
-      unlocked: true
-    },
-    {
-      id: 3,
-      title: 'Воин переработки',
-      description: 'Переработай 50 кг отходов',
-      icon: 'Recycle',
-      unlocked: true
-    },
-    {
-      id: 4,
-      title: 'Защитник лесов',
-      description: 'Посади 5 деревьев',
-      icon: 'TreePine',
-      unlocked: false
-    },
-    {
-      id: 5,
-      title: 'Эко-мастер',
-      description: 'Достигни 10 уровня',
-      icon: 'Award',
-      unlocked: false
-    },
-    {
-      id: 6,
-      title: 'Вдохновитель',
-      description: 'Пригласи 10 друзей',
-      icon: 'Users',
-      unlocked: false
-    }
+  const [competitors, setCompetitors] = useState<Competitor[]>([
+    { id: 1, name: 'Алекс Грин', color: 'bg-blue-500', score: 0, territories: 0, avatar: '🧑' },
+    { id: 2, name: 'Мария Эко', color: 'bg-purple-500', score: 0, territories: 0, avatar: '👩' },
+    { id: 3, name: 'Иван Чистов', color: 'bg-orange-500', score: 0, territories: 0, avatar: '👨' },
   ]);
 
-  const ecoFacts: EcoFact[] = [
-    {
-      id: 1,
-      title: 'Пластик в океане',
-      content: 'Каждый год в океан попадает около 8 миллионов тонн пластика. Это равно одному мусоровозу каждую минуту!',
-      category: 'Океаны',
-      icon: 'Waves'
-    },
-    {
-      id: 2,
-      title: 'Деревья и кислород',
-      content: 'Одно дерево за год производит кислород для 2-3 человек и поглощает до 30 кг CO2.',
-      category: 'Леса',
-      icon: 'TreePine'
-    },
-    {
-      id: 3,
-      title: 'Переработка алюминия',
-      content: 'Переработка одной алюминиевой банки экономит энергию, достаточную для работы телевизора 3 часа.',
-      category: 'Переработка',
-      icon: 'Recycle'
-    },
-    {
-      id: 4,
-      title: 'Водный след',
-      content: 'Для производства одной пары джинсов требуется около 7500 литров воды. Покупай осознанно!',
-      category: 'Вода',
-      icon: 'Droplet'
-    }
+  const gameActions: GameAction[] = [
+    { type: 'clean', name: 'Очистить', energyCost: 20, effect: '-30% загрязнения', icon: 'Sparkles' },
+    { type: 'plant', name: 'Озеленить', energyCost: 25, effect: '+25% зелени', icon: 'TreePine' },
+    { type: 'build', name: 'Построить', energyCost: 35, effect: 'Эко-сооружение', icon: 'Building2' },
   ];
 
-  const completeMission = (missionId: number) => {
-    setMissions(missions.map(mission => {
-      if (mission.id === missionId && mission.progress < 100) {
-        const newProgress = Math.min(mission.progress + 25, 100);
-        if (newProgress === 100) {
-          setUserPoints(userPoints + mission.points);
-          setLevelProgress(Math.min(levelProgress + 10, 100));
-          return { ...mission, progress: newProgress, completed: true };
-        }
-        return { ...mission, progress: newProgress };
+  useEffect(() => {
+    if (gameStarted && roundTime > 0) {
+      const timer = setInterval(() => {
+        setRoundTime(prev => {
+          if (prev <= 1) {
+            simulateCompetitorActions();
+            return 180;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [gameStarted, roundTime]);
+
+  useEffect(() => {
+    if (gameStarted) {
+      const aiInterval = setInterval(() => {
+        simulateCompetitorActions();
+      }, 8000);
+      return () => clearInterval(aiInterval);
+    }
+  }, [gameStarted]);
+
+  const startGame = () => {
+    setShowIntro(false);
+    setGameStarted(true);
+    setRoundTime(180);
+    setCurrentRound(1);
+    setPlayerEnergy(100);
+    setPlayerScore(0);
+  };
+
+  const simulateCompetitorActions = () => {
+    setCompetitors(prev => prev.map(comp => ({
+      ...comp,
+      score: comp.score + Math.floor(Math.random() * 15) + 5,
+      territories: comp.territories + (Math.random() > 0.7 ? 1 : 0)
+    })));
+
+    setTerritories(prev => prev.map(terr => {
+      if (Math.random() > 0.85 && !terr.owner) {
+        const randomComp = competitors[Math.floor(Math.random() * competitors.length)];
+        return {
+          ...terr,
+          pollution: Math.max(0, terr.pollution - 10),
+          greenery: Math.min(100, terr.greenery + 10),
+          owner: randomComp.name
+        };
       }
-      return mission;
+      return terr;
     }));
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'bg-green-500';
-      case 'medium': return 'bg-amber-500';
-      case 'hard': return 'bg-red-500';
-      default: return 'bg-gray-500';
+  const performAction = (action: GameAction, territoryId: number) => {
+    if (playerEnergy < action.energyCost) return;
+
+    setPlayerEnergy(prev => prev - action.energyCost);
+    
+    setTerritories(prev => prev.map(terr => {
+      if (terr.id === territoryId) {
+        let newPollution = terr.pollution;
+        let newGreenery = terr.greenery;
+        
+        if (action.type === 'clean') {
+          newPollution = Math.max(0, terr.pollution - 30);
+          setPlayerScore(prev => prev + 20);
+        } else if (action.type === 'plant') {
+          newGreenery = Math.min(100, terr.greenery + 25);
+          setPlayerScore(prev => prev + 25);
+        } else if (action.type === 'build') {
+          newPollution = Math.max(0, terr.pollution - 20);
+          newGreenery = Math.min(100, terr.greenery + 15);
+          setPlayerScore(prev => prev + 35);
+        }
+
+        if (newPollution <= 20 && newGreenery >= 70 && !terr.owner) {
+          return { ...terr, pollution: newPollution, greenery: newGreenery, owner: 'Вы' };
+        }
+        
+        return { ...terr, pollution: newPollution, greenery: newGreenery };
+      }
+      return terr;
+    }));
+
+    setSelectedTerritory(null);
+  };
+
+  const getTerritoryColor = (type: string) => {
+    switch (type) {
+      case 'forest': return 'from-green-600 to-emerald-700';
+      case 'city': return 'from-gray-600 to-slate-700';
+      case 'water': return 'from-blue-600 to-cyan-700';
+      case 'desert': return 'from-amber-600 to-orange-700';
+      default: return 'from-gray-500 to-gray-600';
     }
   };
 
-  const getDifficultyText = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'Легко';
-      case 'medium': return 'Средне';
-      case 'hard': return 'Сложно';
-      default: return '';
+  const getTerritoryIcon = (type: string) => {
+    switch (type) {
+      case 'forest': return 'TreePine';
+      case 'city': return 'Building2';
+      case 'water': return 'Waves';
+      case 'desert': return 'Mountain';
+      default: return 'MapPin';
     }
   };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const allCompetitors = [
+    { name: 'Вы', score: playerScore, territories: territories.filter(t => t.owner === 'Вы').length, color: 'bg-green-500', avatar: '🎯' },
+    ...competitors
+  ].sort((a, b) => b.score - a.score);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white">
       <div 
-        className="absolute inset-0 opacity-10"
+        className="absolute inset-0 opacity-5"
         style={{
-          backgroundImage: `url('https://cdn.poehali.dev/projects/e5b36923-5495-417c-a5dd-5a767f433b53/files/3931bff9-0039-4725-9018-0cf4f3f9a86d.jpg')`,
+          backgroundImage: `url('https://cdn.poehali.dev/projects/e5b36923-5495-417c-a5dd-5a767f433b53/files/f44e3038-7278-43a7-a2ac-6bf120d7f9e5.jpg')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed'
         }}
       />
 
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
-        <header className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4 animate-fade-in">
-            <Icon name="Leaf" size={48} className="text-primary animate-pulse" />
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-              Эко-Миссия
-            </h1>
-          </div>
-          <p className="text-xl text-muted-foreground">Спасай планету через интерактивные челленджи!</p>
-        </header>
-
-        <Card className="mb-8 border-2 border-primary/20 shadow-lg animate-scale-in">
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                  {userLevel}
-                </div>
-                <div>
-                  <CardTitle className="text-2xl">Эко-герой</CardTitle>
-                  <CardDescription className="text-lg">Уровень {userLevel} • {userPoints} очков</CardDescription>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Badge variant="secondary" className="text-lg px-4 py-2">
-                  <Icon name="Target" size={16} className="mr-2" />
-                  {missions.filter(m => m.completed).length} / {missions.length} миссий
-                </Badge>
-                <Badge variant="secondary" className="text-lg px-4 py-2">
-                  <Icon name="Award" size={16} className="mr-2" />
-                  {achievements.filter(a => a.unlocked).length} / {achievements.length} наград
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm font-medium">
-                <span>До уровня {userLevel + 1}</span>
-                <span>{levelProgress}%</span>
-              </div>
-              <Progress value={levelProgress} className="h-3" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Tabs defaultValue="missions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 h-14 bg-card shadow-md">
-            <TabsTrigger value="missions" className="text-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Icon name="Target" size={20} className="mr-2" />
-              Миссии
-            </TabsTrigger>
-            <TabsTrigger value="achievements" className="text-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Icon name="Award" size={20} className="mr-2" />
-              Достижения
-            </TabsTrigger>
-            <TabsTrigger value="learn" className="text-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Icon name="BookOpen" size={20} className="mr-2" />
-              Обучение
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="missions" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {missions.map((mission, index) => (
-                <Card 
-                  key={mission.id} 
-                  className={`hover:shadow-xl transition-all duration-300 border-2 ${
-                    mission.completed ? 'border-green-400 bg-green-50' : 'border-border hover:border-primary'
-                  } animate-fade-in`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className={`w-12 h-12 rounded-xl ${mission.completed ? 'bg-green-500' : 'bg-primary'} flex items-center justify-center text-white shadow-md`}>
-                          <Icon name={mission.icon as any} size={24} />
-                        </div>
-                        <div className="flex-1">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            {mission.title}
-                            {mission.completed && (
-                              <Icon name="CheckCircle2" size={20} className="text-green-600" />
-                            )}
-                          </CardTitle>
-                          <CardDescription className="text-sm">{mission.category}</CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge className={`${getDifficultyColor(mission.difficulty)} text-white`}>
-                          {getDifficultyText(mission.difficulty)}
-                        </Badge>
-                        <Badge variant="outline" className="border-amber-500 text-amber-700">
-                          <Icon name="Coins" size={14} className="mr-1" />
-                          {mission.points}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">{mission.description}</p>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm font-medium">
-                        <span>Прогресс</span>
-                        <span>{mission.progress}%</span>
-                      </div>
-                      <Progress value={mission.progress} className="h-2" />
-                    </div>
-
-                    {!mission.completed && (
-                      <Button 
-                        onClick={() => completeMission(mission.id)}
-                        className="w-full hover-scale"
-                        disabled={mission.progress === 100}
-                      >
-                        {mission.progress === 100 ? (
-                          <>
-                            <Icon name="CheckCircle2" size={18} className="mr-2" />
-                            Завершено!
-                          </>
-                        ) : (
-                          <>
-                            <Icon name="Play" size={18} className="mr-2" />
-                            Продолжить
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="achievements" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {achievements.map((achievement, index) => (
-                <Card 
-                  key={achievement.id}
-                  className={`text-center hover:shadow-lg transition-all duration-300 ${
-                    achievement.unlocked 
-                      ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50' 
-                      : 'opacity-60 grayscale'
-                  } animate-fade-in`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <CardHeader>
-                    <div className="mx-auto mb-3 relative">
-                      <div 
-                        className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl shadow-lg ${
-                          achievement.unlocked 
-                            ? 'bg-gradient-to-br from-amber-400 to-orange-500 animate-pulse' 
-                            : 'bg-gray-400'
-                        }`}
-                      >
-                        <Icon name={achievement.icon as any} size={40} />
-                      </div>
-                      {achievement.unlocked && (
-                        <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-2">
-                          <Icon name="Check" size={20} className="text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <CardTitle className="text-lg">{achievement.title}</CardTitle>
-                    <CardDescription>{achievement.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {achievement.unlocked ? (
-                      <Badge className="bg-green-500 text-white">
-                        <Icon name="Unlock" size={14} className="mr-1" />
-                        Получено
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="border-gray-400">
-                        <Icon name="Lock" size={14} className="mr-1" />
-                        Заблокировано
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <Card className="mt-8 border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50">
-              <CardHeader className="text-center">
-                <div 
-                  className="w-full h-48 mb-4 rounded-lg bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url('https://cdn.poehali.dev/projects/e5b36923-5495-417c-a5dd-5a767f433b53/files/221b704c-9bb6-418d-bfa5-b2d78aa2a768.jpg')`
-                  }}
-                />
-                <CardTitle className="text-2xl">Коллекционируй достижения!</CardTitle>
-                <CardDescription className="text-base">
-                  Выполняй миссии, помогай природе и открывай уникальные награды
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="learn" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ecoFacts.map((fact, index) => (
-                <Card 
-                  key={fact.id}
-                  className="hover:shadow-lg transition-shadow border-2 border-blue-200 hover:border-blue-400 animate-fade-in"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white shadow-md">
-                        <Icon name={fact.icon as any} size={24} />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{fact.title}</CardTitle>
-                        <CardDescription>{fact.category}</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">{fact.content}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <Card className="mt-8 border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50">
-              <CardHeader className="text-center">
-                <div 
-                  className="w-full h-64 mb-4 rounded-lg bg-cover bg-center shadow-lg"
-                  style={{
-                    backgroundImage: `url('https://cdn.poehali.dev/projects/e5b36923-5495-417c-a5dd-5a767f433b53/files/677c081a-dde4-4016-b8f8-6f3a83882b1d.jpg')`
-                  }}
-                />
-                <CardTitle className="text-2xl">Узнавай больше об экологии</CardTitle>
-                <CardDescription className="text-base">
-                  Каждый день новые интересные факты о природе и защите окружающей среды
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Button size="lg" className="hover-scale">
-                  <Icon name="Sparkles" size={20} className="mr-2" />
-                  Больше материалов
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <Card className="mt-8 border-2 border-primary bg-gradient-to-r from-green-100 to-blue-100">
-          <CardContent className="py-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-center md:text-left">
-                <h3 className="text-2xl font-bold mb-2 flex items-center gap-2 justify-center md:justify-start">
-                  <Icon name="Users" size={28} className="text-primary" />
-                  Пригласи друзей!
-                </h3>
-                <p className="text-muted-foreground text-lg">
-                  Вместе вы сможете выполнять командные миссии и получать бонусы
+      <Dialog open={showIntro} onOpenChange={setShowIntro}>
+        <DialogContent className="max-w-3xl bg-gradient-to-br from-green-50 to-emerald-100 text-foreground">
+          <DialogHeader>
+            <div 
+              className="w-full h-48 mb-4 rounded-lg bg-cover bg-center"
+              style={{
+                backgroundImage: `url('https://cdn.poehali.dev/projects/e5b36923-5495-417c-a5dd-5a767f433b53/files/2d73e245-fee8-47e7-9263-2173c8b86efc.jpg')`
+              }}
+            />
+            <DialogTitle className="text-3xl font-bold text-center flex items-center justify-center gap-3">
+              <Icon name="Leaf" size={36} className="text-green-600" />
+              Добро пожаловать в Гринеква!
+            </DialogTitle>
+            <DialogDescription className="text-base space-y-4 text-foreground/90">
+              <p className="text-lg font-semibold text-center">
+                "Создавая что-то новое, не забудь об охране экологии"
+              </p>
+              
+              <div className="bg-white/50 p-4 rounded-lg">
+                <h4 className="font-bold mb-2 text-lg">📍 Ваша миссия:</h4>
+                <p>
+                  Вы находитесь в виртуальном мире <strong>"Эмеральт"</strong> — копии нашей планеты. 
+                  Это практическое испытание вместо обычного собеседования. Покажите свои навыки эко-менеджера!
                 </p>
               </div>
-              <Button size="lg" variant="default" className="hover-scale shadow-lg">
-                <Icon name="Share2" size={20} className="mr-2" />
-                Поделиться
-              </Button>
+
+              <div className="bg-white/50 p-4 rounded-lg">
+                <h4 className="font-bold mb-2 text-lg">🎯 Цель игры:</h4>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Очищайте загрязнённые территории быстрее конкурентов</li>
+                  <li>Озеленяйте земли и стройте эко-сооружения</li>
+                  <li>Захватывайте контроль над территориями (pollution ≤20%, greenery ≥70%)</li>
+                  <li>Набирайте больше очков, чем другие кандидаты</li>
+                </ul>
+              </div>
+
+              <div className="bg-white/50 p-4 rounded-lg">
+                <h4 className="font-bold mb-2 text-lg">⚡ Ресурсы:</h4>
+                <p>
+                  У вас есть <strong>100 единиц энергии</strong> на раунд. Каждое действие стоит энергии. 
+                  Используйте её мудро!
+                </p>
+              </div>
+
+              <div className="text-center pt-4">
+                <Button size="lg" onClick={startGame} className="hover-scale text-lg px-8">
+                  <Icon name="Rocket" size={24} className="mr-2" />
+                  Начать испытание!
+                </Button>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      <div className="relative z-10 container mx-auto px-4 py-6 max-w-7xl">
+        <header className="mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <Icon name="Leaf" size={40} className="text-green-400 animate-pulse" />
+              <div>
+                <h1 className="text-3xl font-bold">Эмеральт: Эко-Стратегия</h1>
+                <p className="text-green-300 text-sm">Испытание для Гринеква</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="flex gap-3 items-center">
+              <Badge variant="outline" className="text-lg px-4 py-2 bg-white/10 border-white/30">
+                <Icon name="Clock" size={18} className="mr-2" />
+                {formatTime(roundTime)}
+              </Badge>
+              <Badge variant="outline" className="text-lg px-4 py-2 bg-white/10 border-white/30">
+                <Icon name="Zap" size={18} className="mr-2 text-yellow-400" />
+                {playerEnergy} энергии
+              </Badge>
+              <Badge variant="outline" className="text-lg px-4 py-2 bg-green-500 border-green-400">
+                <Icon name="Trophy" size={18} className="mr-2" />
+                {playerScore} очков
+              </Badge>
+            </div>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="bg-slate-800/50 border-green-500/30 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Icon name="Map" size={24} className="text-green-400" />
+                  Карта территорий Эмеральта
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Кликните на территорию, чтобы выполнить действие
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {territories.map((territory) => (
+                    <Card
+                      key={territory.id}
+                      className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
+                        selectedTerritory === territory.id 
+                          ? 'ring-4 ring-green-400 scale-105' 
+                          : ''
+                      } ${territory.owner ? 'border-2 border-yellow-400' : ''}`}
+                      onClick={() => setSelectedTerritory(territory.id)}
+                    >
+                      <CardHeader className={`p-3 bg-gradient-to-br ${getTerritoryColor(territory.type)} text-white rounded-t-lg`}>
+                        <div className="flex items-center justify-between">
+                          <Icon name={getTerritoryIcon(territory.type) as any} size={24} />
+                          {territory.owner && (
+                            <Badge className="text-xs bg-yellow-400 text-black">
+                              {territory.owner}
+                            </Badge>
+                          )}
+                        </div>
+                        <CardTitle className="text-sm mt-2">{territory.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 space-y-2 bg-slate-700">
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-red-300">Загрязнение</span>
+                            <span className="text-white font-bold">{territory.pollution}%</span>
+                          </div>
+                          <Progress value={territory.pollution} className="h-2 bg-slate-600" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-green-300">Зелень</span>
+                            <span className="text-white font-bold">{territory.greenery}%</span>
+                          </div>
+                          <Progress value={territory.greenery} className="h-2 bg-slate-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {selectedTerritory && (
+              <Card className="bg-green-900/50 border-green-400 backdrop-blur animate-scale-in">
+                <CardHeader>
+                  <CardTitle className="text-white">
+                    Выберите действие для: {territories.find(t => t.id === selectedTerritory)?.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {gameActions.map((action) => (
+                      <Button
+                        key={action.type}
+                        onClick={() => performAction(action, selectedTerritory)}
+                        disabled={playerEnergy < action.energyCost}
+                        className="flex flex-col items-center gap-2 h-auto py-4 hover-scale"
+                        variant={playerEnergy >= action.energyCost ? 'default' : 'secondary'}
+                      >
+                        <Icon name={action.icon as any} size={28} />
+                        <span className="font-bold">{action.name}</span>
+                        <span className="text-xs">{action.effect}</span>
+                        <Badge variant="outline" className="mt-1">
+                          <Icon name="Zap" size={12} className="mr-1" />
+                          {action.energyCost}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <Card className="bg-purple-900/50 border-purple-400 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Icon name="Users" size={24} className="text-purple-300" />
+                  Таблица лидеров
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Конкуренты за место в Гринеква
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {allCompetitors.map((comp, index) => (
+                  <div 
+                    key={comp.name}
+                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                      comp.name === 'Вы' 
+                        ? 'bg-green-600/30 border-2 border-green-400' 
+                        : 'bg-slate-700/50'
+                    } animate-fade-in`}
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className="text-2xl font-bold text-yellow-400">
+                      {index + 1}
+                    </div>
+                    <div className={`w-10 h-10 rounded-full ${comp.color} flex items-center justify-center text-2xl`}>
+                      {comp.avatar}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-white">{comp.name}</div>
+                      <div className="text-xs text-gray-300">
+                        {comp.territories} территорий
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-green-300">{comp.score}</div>
+                      <div className="text-xs text-gray-300">очков</div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-blue-900/50 border-blue-400 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Icon name="Info" size={24} className="text-blue-300" />
+                  Подсказка
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-gray-200 text-sm space-y-2">
+                <p>💡 <strong>Стратегия:</strong> Фокусируйтесь на территориях с низким загрязнением — их легче захватить!</p>
+                <p>⚡ <strong>Энергия:</strong> Планируйте действия. Энергия восстанавливается каждый раунд.</p>
+                <p>🏆 <strong>Победа:</strong> Территория переходит вам при загрязнении ≤20% и зелени ≥70%.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-amber-900/50 border-amber-400 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Icon name="Target" size={24} className="text-amber-300" />
+                  Ваш прогресс
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-sm mb-1 text-gray-200">
+                    <span>Контролируемые территории</span>
+                    <span className="font-bold">{territories.filter(t => t.owner === 'Вы').length} / {territories.length}</span>
+                  </div>
+                  <Progress 
+                    value={(territories.filter(t => t.owner === 'Вы').length / territories.length) * 100} 
+                    className="h-2" 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <Badge variant="outline" className="justify-center py-2 bg-white/10">
+                    <Icon name="Sparkles" size={16} className="mr-1" />
+                    {territories.filter(t => t.owner === 'Вы').length} очищено
+                  </Badge>
+                  <Badge variant="outline" className="justify-center py-2 bg-white/10">
+                    <Icon name="Award" size={16} className="mr-1" />
+                    Раунд {currentRound}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
