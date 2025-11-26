@@ -30,6 +30,7 @@ interface GameAction {
   materialsCost: number;
   foodCost: number;
   waterCost: number;
+  energyCost: number;
   effect: string;
   icon: string;
 }
@@ -41,6 +42,7 @@ const Index = () => {
   const [playerMaterials, setPlayerMaterials] = useState(100);
   const [playerFood, setPlayerFood] = useState(80);
   const [playerWater, setPlayerWater] = useState(90);
+  const [playerEnergy, setPlayerEnergy] = useState(100);
   const [playerScore, setPlayerScore] = useState(0);
   const [selectedTerritory, setSelectedTerritory] = useState<number | null>(null);
   const [showIntro, setShowIntro] = useState(true);
@@ -63,9 +65,9 @@ const Index = () => {
   ]);
 
   const gameActions: GameAction[] = [
-    { type: 'clean', name: 'Очистить', materialsCost: 15, foodCost: 5, waterCost: 10, effect: '-30% загрязнения', icon: 'Sparkles' },
-    { type: 'plant', name: 'Озеленить', materialsCost: 10, foodCost: 8, waterCost: 15, effect: '+25% зелени', icon: 'TreePine' },
-    { type: 'build', name: 'Построить', materialsCost: 30, foodCost: 10, waterCost: 5, effect: 'Эко-сооружение', icon: 'Building2' },
+    { type: 'clean', name: 'Очистить', materialsCost: 15, foodCost: 5, waterCost: 10, energyCost: 20, effect: '-30% загрязнения', icon: 'Sparkles' },
+    { type: 'plant', name: 'Озеленить', materialsCost: 10, foodCost: 8, waterCost: 15, energyCost: 15, effect: '+25% зелени', icon: 'TreePine' },
+    { type: 'build', name: 'Построить', materialsCost: 30, foodCost: 10, waterCost: 5, energyCost: 30, effect: 'Эко-сооружение', icon: 'Building2' },
   ];
 
   useEffect(() => {
@@ -102,6 +104,7 @@ const Index = () => {
     setPlayerMaterials(100);
     setPlayerFood(80);
     setPlayerWater(90);
+    setPlayerEnergy(100);
     setPlayerScore(0);
   };
 
@@ -109,6 +112,7 @@ const Index = () => {
     setPlayerMaterials(100);
     setPlayerFood(80);
     setPlayerWater(90);
+    setPlayerEnergy(100);
   };
 
   const simulateCompetitorActions = () => {
@@ -135,7 +139,8 @@ const Index = () => {
   const canPerformAction = (action: GameAction) => {
     return playerMaterials >= action.materialsCost &&
            playerFood >= action.foodCost &&
-           playerWater >= action.waterCost;
+           playerWater >= action.waterCost &&
+           playerEnergy >= action.energyCost;
   };
 
   const performAction = (action: GameAction, territoryId: number) => {
@@ -144,6 +149,7 @@ const Index = () => {
     setPlayerMaterials(prev => prev - action.materialsCost);
     setPlayerFood(prev => prev - action.foodCost);
     setPlayerWater(prev => prev - action.waterCost);
+    setPlayerEnergy(prev => prev - action.energyCost);
     
     setTerritories(prev => prev.map(terr => {
       if (terr.id === territoryId) {
@@ -264,7 +270,7 @@ const Index = () => {
               <div className="bg-white/50 p-4 rounded-lg">
                 <h4 className="font-bold mb-2 text-lg">⚡ Ресурсы:</h4>
                 <p>
-                  У вас есть три типа ресурсов: <strong>стройматериалы</strong>, <strong>еда</strong> и <strong>вода</strong>. 
+                  У вас есть четыре типа ресурсов: <strong>стройматериалы</strong>, <strong>еда</strong>, <strong>вода</strong> и <strong>энергия</strong>. 
                   Каждое действие требует определённых ресурсов. Планируйте мудро!
                 </p>
               </div>
@@ -307,6 +313,10 @@ const Index = () => {
               <Badge variant="outline" className="text-lg px-4 py-2 bg-blue-500/20 border-blue-400">
                 <Icon name="Droplet" size={18} className="mr-2" />
                 {playerWater}
+              </Badge>
+              <Badge variant="outline" className="text-lg px-4 py-2 bg-yellow-500/20 border-yellow-400">
+                <Icon name="Zap" size={18} className="mr-2" />
+                {playerEnergy}
               </Badge>
               <Badge variant="outline" className="text-lg px-4 py-2 bg-green-500 border-green-400">
                 <Icon name="Trophy" size={18} className="mr-2" />
@@ -407,6 +417,10 @@ const Index = () => {
                             <Badge variant="outline" className="text-xs">
                               <Icon name="Droplet" size={10} className="mr-1" />
                               {action.waterCost}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              <Icon name="Zap" size={10} className="mr-1" />
+                              {action.energyCost}
                             </Badge>
                           </div>
                         </Button>
