@@ -24,6 +24,12 @@ interface Competitor {
   avatar: string;
 }
 
+interface ResourceCard {
+  id: string;
+  type: 'materials' | 'food' | 'water' | 'energy';
+  value: 5 | 10 | 20;
+}
+
 interface GameAction {
   type: 'clean' | 'plant' | 'build';
   name: string;
@@ -39,11 +45,9 @@ const Index = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [roundTime, setRoundTime] = useState(180);
   const [currentRound, setCurrentRound] = useState(1);
-  const [playerMaterials, setPlayerMaterials] = useState(100);
-  const [playerFood, setPlayerFood] = useState(80);
-  const [playerWater, setPlayerWater] = useState(90);
-  const [playerEnergy, setPlayerEnergy] = useState(100);
+  const [playerCurrency, setPlayerCurrency] = useState(400);
   const [playerScore, setPlayerScore] = useState(0);
+  const [resourceCards, setResourceCards] = useState<ResourceCard[]>([]);
   const [selectedTerritory, setSelectedTerritory] = useState<number | null>(null);
   const [showIntro, setShowIntro] = useState(true);
 
@@ -96,23 +100,53 @@ const Index = () => {
     }
   }, [gameStarted]);
 
+  const generateRandomCard = (type: ResourceCard['type']): ResourceCard => {
+    const values: (5 | 10 | 20)[] = [5, 10, 20];
+    const randomValue = values[Math.floor(Math.random() * values.length)];
+    return {
+      id: `${type}-${Date.now()}-${Math.random()}`,
+      type,
+      value: randomValue
+    };
+  };
+
   const startGame = () => {
     setShowIntro(false);
     setGameStarted(true);
     setRoundTime(180);
     setCurrentRound(1);
-    setPlayerMaterials(100);
-    setPlayerFood(80);
-    setPlayerWater(90);
-    setPlayerEnergy(100);
+    setPlayerCurrency(400);
     setPlayerScore(0);
+    
+    const initialCards: ResourceCard[] = [
+      generateRandomCard('materials'),
+      generateRandomCard('food'),
+      generateRandomCard('water'),
+      generateRandomCard('energy')
+    ];
+    setResourceCards(initialCards);
   };
 
   const restoreResources = () => {
-    setPlayerMaterials(100);
-    setPlayerFood(80);
-    setPlayerWater(90);
-    setPlayerEnergy(100);
+    setPlayerCurrency(prev => prev + 200);
+  };
+
+  const buyResourceCard = (type: ResourceCard['type']) => {
+    if (playerCurrency < 50) return;
+    setPlayerCurrency(prev => prev - 50);
+    const newCard = generateRandomCard(type);
+    setResourceCards(prev => [...prev, newCard]);
+  };
+
+  const sellResourceCard = (cardId: string) => {
+    setPlayerCurrency(prev => prev + 20);
+    setResourceCards(prev => prev.filter(card => card.id !== cardId));
+  };
+
+  const getTotalResourceValue = (type: ResourceCard['type']) => {
+    return resourceCards
+      .filter(card => card.type === type)
+      .reduce((sum, card) => sum + card.value, 0);
   };
 
   const simulateCompetitorActions = () => {
@@ -137,19 +171,35 @@ const Index = () => {
   };
 
   const canPerformAction = (action: GameAction) => {
-    return playerMaterials >= action.materialsCost &&
-           playerFood >= action.foodCost &&
-           playerWater >= action.waterCost &&
-           playerEnergy >= action.energyCost;
+    return getTotalResourceValue('materials') >= action.materialsCost &&
+           getTotalResourceValue('food') >= action.foodCost &&
+           getTotalResourceValue('water') >= action.waterCost &&
+           getTotalResourceValue('energy') >= action.energyCost;
+  };
+
+  const spendResources = (type: ResourceCard['type'], amount: number) => {
+    let remaining = amount;
+    const newCards = [...resourceCards];
+    
+    for (let i = newCards.length - 1; i >= 0 && remaining > 0; i--) {
+      if (newCards[i].type === type) {
+        if (newCards[i].value <= remaining) {
+          remaining -= newCards[i].value;
+          newCards.splice(i, 1);
+        }
+      }
+    }
+    
+    setResourceCards(newCards);
   };
 
   const performAction = (action: GameAction, territoryId: number) => {
     if (!canPerformAction(action)) return;
 
-    setPlayerMaterials(prev => prev - action.materialsCost);
-    setPlayerFood(prev => prev - action.foodCost);
-    setPlayerWater(prev => prev - action.waterCost);
-    setPlayerEnergy(prev => prev - action.energyCost);
+    spendResources('materials', action.materialsCost);
+    spendResources('food', action.foodCost);
+    spendResources('water', action.waterCost);
+    spendResources('energy', action.energyCost);
     
     setTerritories(prev => prev.map(terr => {
       if (terr.id === territoryId) {
@@ -334,21 +384,9 @@ const Index = () => {
                 <Icon name="Clock" size={18} className="mr-2" />
                 {formatTime(roundTime)}
               </Badge>
-              <Badge variant="outline" className="text-lg px-4 py-2 bg-orange-500/20 border-orange-400">
-                <Icon name="Hammer" size={18} className="mr-2" />
-                {playerMaterials}
-              </Badge>
-              <Badge variant="outline" className="text-lg px-4 py-2 bg-amber-500/20 border-amber-400">
-                <Icon name="UtensilsCrossed" size={18} className="mr-2" />
-                {playerFood}
-              </Badge>
-              <Badge variant="outline" className="text-lg px-4 py-2 bg-blue-500/20 border-blue-400">
-                <Icon name="Droplet" size={18} className="mr-2" />
-                {playerWater}
-              </Badge>
-              <Badge variant="outline" className="text-lg px-4 py-2 bg-yellow-500/20 border-yellow-400">
-                <Icon name="Zap" size={18} className="mr-2" />
-                {playerEnergy}
+              <Badge variant="outline" className="text-lg px-4 py-2 bg-emerald-600 border-emerald-400">
+                <Icon name="CircleDollarSign" size={18} className="mr-2" />
+                {playerCurrency} ₽
               </Badge>
               <Badge variant="outline" className="text-lg px-4 py-2 bg-green-500 border-green-400">
                 <Icon name="Trophy" size={18} className="mr-2" />
@@ -455,6 +493,24 @@ const Index = () => {
                               {action.energyCost}
                             </Badge>
                           </div>
+                          <div className="flex gap-2 mt-1 flex-wrap justify-center">
+                            <Badge variant="outline" className="text-xs">
+                              <Icon name="Hammer" size={10} className="mr-1" />
+                              {action.materialsCost}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              <Icon name="UtensilsCrossed" size={10} className="mr-1" />
+                              {action.foodCost}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              <Icon name="Droplet" size={10} className="mr-1" />
+                              {action.waterCost}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              <Icon name="Zap" size={10} className="mr-1" />
+                              {action.energyCost}
+                            </Badge>
+                          </div>
                         </Button>
                       );
                     })}
@@ -507,17 +563,113 @@ const Index = () => {
               </CardContent>
             </Card>
 
+            <Card className="bg-orange-900/50 border-orange-400 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Icon name="ShoppingCart" size={24} className="text-orange-300" />
+                  Магазин ресурсов
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Покупка: 50₽ | Продажа: 20₽
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    onClick={() => buyResourceCard('materials')} 
+                    disabled={playerCurrency < 50}
+                    size="sm"
+                    className="flex flex-col h-auto py-2"
+                  >
+                    <Icon name="Hammer" size={16} />
+                    <span className="text-xs">Купить</span>
+                  </Button>
+                  <Button 
+                    onClick={() => buyResourceCard('food')} 
+                    disabled={playerCurrency < 50}
+                    size="sm"
+                    className="flex flex-col h-auto py-2"
+                  >
+                    <Icon name="UtensilsCrossed" size={16} />
+                    <span className="text-xs">Купить</span>
+                  </Button>
+                  <Button 
+                    onClick={() => buyResourceCard('water')} 
+                    disabled={playerCurrency < 50}
+                    size="sm"
+                    className="flex flex-col h-auto py-2"
+                  >
+                    <Icon name="Droplet" size={16} />
+                    <span className="text-xs">Купить</span>
+                  </Button>
+                  <Button 
+                    onClick={() => buyResourceCard('energy')} 
+                    disabled={playerCurrency < 50}
+                    size="sm"
+                    className="flex flex-col h-auto py-2"
+                  >
+                    <Icon name="Zap" size={16} />
+                    <span className="text-xs">Купить</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-800/50 border-slate-400 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Icon name="Wallet" size={24} className="text-slate-300" />
+                  Ваши карточки ресурсов
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {['materials', 'food', 'water', 'energy'].map((type) => {
+                  const cards = resourceCards.filter(c => c.type === type);
+                  const total = getTotalResourceValue(type as ResourceCard['type']);
+                  const iconName = type === 'materials' ? 'Hammer' : type === 'food' ? 'UtensilsCrossed' : type === 'water' ? 'Droplet' : 'Zap';
+                  const colorClass = type === 'materials' ? 'bg-orange-500/20' : type === 'food' ? 'bg-amber-500/20' : type === 'water' ? 'bg-blue-500/20' : 'bg-yellow-500/20';
+                  
+                  return (
+                    <div key={type} className={`p-3 rounded-lg ${colorClass}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Icon name={iconName as any} size={18} />
+                          <span className="font-bold text-white">Итого: {total}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {cards.length === 0 ? (
+                          <span className="text-xs text-gray-400">Нет карточек</span>
+                        ) : (
+                          cards.map((card) => (
+                            <Badge 
+                              key={card.id}
+                              className="cursor-pointer hover:bg-red-500"
+                              onClick={() => sellResourceCard(card.id)}
+                            >
+                              {card.value}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
             <Card className="bg-blue-900/50 border-blue-400 backdrop-blur">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Icon name="Info" size={24} className="text-blue-300" />
-                  Подсказка
+                  Подсказки
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-gray-200 text-sm space-y-2">
-                <p>💡 <strong>Стратегия:</strong> Начните с территорий с низким загрязнением — их легче захватить!</p>
-                <p>⚡ <strong>Ресурсы:</strong> Планируйте расход. Ресурсы восстанавливаются каждый раунд.</p>
-                <p>🏆 <strong>Победа:</strong> Территория ваша при загрязнении ≤20% и зелени ≥70%.</p>
+                <p>💡 Территория ваша при загрязнении ≤20% и зелени ≥70%</p>
+                <p>💰 Каждый круг +200₽</p>
+                <p>🎲 Карточки с номиналом 5, 10, 20</p>
+                <p>🛒 Клик на карточку — продать за 20₽</p>
               </CardContent>
             </Card>
 
