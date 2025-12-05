@@ -34,9 +34,61 @@ const Index = () => {
   ]);
 
   const gameActions: GameAction[] = [
-    { type: 'clean', name: 'Очистить', materialsCost: 15, foodCost: 5, waterCost: 10, energyCost: 20, effect: '-30% загрязнения', icon: 'Sparkles' },
-    { type: 'plant', name: 'Озеленить', materialsCost: 10, foodCost: 8, waterCost: 15, energyCost: 15, effect: '+25% зелени', icon: 'TreePine' },
-    { type: 'build', name: 'Построить', materialsCost: 30, foodCost: 10, waterCost: 5, energyCost: 30, effect: 'Эко-сооружение', icon: 'Building2' },
+    // Река (Озеро)
+    { id: 'river-volunteer', name: 'Волонтерская деятельность', foodCost: 50, waterCost: 10, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -15, greeneryEffect: 10, icon: 'Users', territoryTypes: ['lake'] },
+    { id: 'river-green', name: 'Озеленение', foodCost: 20, waterCost: 30, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: 0, greeneryEffect: 25, icon: 'TreePine', territoryTypes: ['lake'] },
+    { id: 'river-facility', name: 'Очистные сооружения', energyCost: 30, materialsCost: 50, foodCost: 0, waterCost: 0, moneyCost: 0, pollutionEffect: -35, greeneryEffect: 5, icon: 'Wrench', territoryTypes: ['lake'] },
+    { id: 'river-reintro', name: 'Реинтродукция', moneyCost: 200, foodCost: 0, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -10, greeneryEffect: 20, icon: 'Flower2', territoryTypes: ['lake'] },
+    { id: 'river-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['lake'] },
+
+    // Лес
+    { id: 'forest-stump', name: 'Корчевание', foodCost: 20, waterCost: 20, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -10, greeneryEffect: 15, icon: 'Axe', territoryTypes: ['forest'] },
+    { id: 'forest-green', name: 'Озеленение', foodCost: 20, waterCost: 30, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: 0, greeneryEffect: 25, icon: 'TreePine', territoryTypes: ['forest'] },
+    { id: 'forest-reintro', name: 'Реинтродукция', moneyCost: 200, foodCost: 0, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -10, greeneryEffect: 20, icon: 'Flower2', territoryTypes: ['forest'] },
+    { id: 'forest-recult', name: 'Рекультивация земель', moneyCost: 100, foodCost: 0, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Mountain', territoryTypes: ['forest'] },
+    { id: 'forest-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['forest'] },
+
+    // Парк
+    { id: 'park-volunteer', name: 'Волонтерская деятельность', foodCost: 50, waterCost: 10, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -15, greeneryEffect: 10, icon: 'Users', territoryTypes: ['park'] },
+    { id: 'park-furniture', name: 'Замена уличной мебели', materialsCost: 50, foodCost: 0, waterCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -10, greeneryEffect: 5, icon: 'Armchair', territoryTypes: ['park'] },
+    { id: 'park-education', name: 'Просвещение населения', moneyCost: 10, foodCost: 30, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -5, greeneryEffect: 10, icon: 'BookOpen', territoryTypes: ['park'] },
+    { id: 'park-plant', name: 'Посадка растений', foodCost: 20, waterCost: 30, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: 0, greeneryEffect: 25, icon: 'Sprout', territoryTypes: ['park'] },
+    { id: 'park-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['park'] },
+
+    // Промышленная зона
+    { id: 'indus-filter', name: 'Установка фильтров', materialsCost: 30, energyCost: 20, foodCost: 0, waterCost: 0, moneyCost: 0, pollutionEffect: -30, greeneryEffect: 0, icon: 'Filter', territoryTypes: ['industrial'] },
+    { id: 'indus-waste', name: 'Системы управления отходами', materialsCost: 50, foodCost: 0, waterCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -35, greeneryEffect: 5, icon: 'Recycle', territoryTypes: ['industrial'] },
+    { id: 'indus-hygiene', name: 'Гигиена труда', energyCost: 20, waterCost: 20, foodCost: 0, materialsCost: 0, moneyCost: 0, pollutionEffect: -15, greeneryEffect: 0, icon: 'Shield', territoryTypes: ['industrial'] },
+    { id: 'indus-security', name: 'Системы охраны', energyCost: 30, moneyCost: 50, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -10, greeneryEffect: 5, icon: 'ShieldAlert', territoryTypes: ['industrial'] },
+    { id: 'indus-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['industrial'] },
+
+    // Озеро со сливом
+    { id: 'lake2-clean', name: 'Механическая очистка', foodCost: 50, waterCost: 10, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -25, greeneryEffect: 5, icon: 'Eraser', territoryTypes: ['polluted-lake'] },
+    { id: 'lake2-chem', name: 'Физико-химическая очистка', moneyCost: 100, energyCost: 5, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -30, greeneryEffect: 0, icon: 'Flask', territoryTypes: ['polluted-lake'] },
+    { id: 'lake2-reintro', name: 'Реинтродукция', moneyCost: 200, foodCost: 0, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -10, greeneryEffect: 20, icon: 'Flower2', territoryTypes: ['polluted-lake'] },
+    { id: 'lake2-barrier', name: 'Экологический барьер', materialsCost: 50, foodCost: 20, waterCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -25, greeneryEffect: 10, icon: 'Construction', territoryTypes: ['polluted-lake'] },
+    { id: 'lake2-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['polluted-lake'] },
+
+    // Овраг
+    { id: 'ravine-green', name: 'Озеленение', foodCost: 20, waterCost: 30, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: 0, greeneryEffect: 25, icon: 'TreePine', territoryTypes: ['ravine'] },
+    { id: 'ravine-terrace', name: 'Террасирование склонов', energyCost: 30, foodCost: 20, waterCost: 0, materialsCost: 0, moneyCost: 0, pollutionEffect: -15, greeneryEffect: 15, icon: 'Mountain', territoryTypes: ['ravine'] },
+    { id: 'ravine-drainage', name: 'Дренажные каналы', moneyCost: 100, materialsCost: 20, foodCost: 0, waterCost: 0, energyCost: 0, pollutionEffect: -20, greeneryEffect: 10, icon: 'Waves', territoryTypes: ['ravine'] },
+    { id: 'ravine-reinforce', name: 'Укрепление склонов', materialsCost: 50, foodCost: 30, waterCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -15, greeneryEffect: 10, icon: 'HardHat', territoryTypes: ['ravine'] },
+    { id: 'ravine-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['ravine'] },
+
+    // Поле
+    { id: 'field-rotation', name: 'Севооборот', waterCost: 30, energyCost: 20, foodCost: 0, materialsCost: 0, moneyCost: 0, pollutionEffect: -10, greeneryEffect: 15, icon: 'RefreshCw', territoryTypes: ['field'] },
+    { id: 'field-slotting', name: 'Щелевание', moneyCost: 100, foodCost: 0, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -15, greeneryEffect: 10, icon: 'Split', territoryTypes: ['field'] },
+    { id: 'field-plow', name: 'Контурная вспашка', waterCost: 30, moneyCost: 50, foodCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -10, greeneryEffect: 10, icon: 'CircleDashed', territoryTypes: ['field'] },
+    { id: 'field-sideration', name: 'Сидерация', moneyCost: 100, foodCost: 20, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -5, greeneryEffect: 20, icon: 'Leaf', territoryTypes: ['field'] },
+    { id: 'field-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['field'] },
+
+    // Опушка леса
+    { id: 'edge-clean', name: 'Механическая очистка', foodCost: 30, waterCost: 10, materialsCost: 0, energyCost: 0, moneyCost: 0, pollutionEffect: -20, greeneryEffect: 5, icon: 'Eraser', territoryTypes: ['forest-edge'] },
+    { id: 'edge-chem', name: 'Физико-химическая очистка', moneyCost: 100, energyCost: 5, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -25, greeneryEffect: 0, icon: 'Flask', territoryTypes: ['forest-edge'] },
+    { id: 'edge-reintro', name: 'Реинтродукция', moneyCost: 200, foodCost: 0, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -10, greeneryEffect: 20, icon: 'Flower2', territoryTypes: ['forest-edge'] },
+    { id: 'edge-education', name: 'Просвещение населения', moneyCost: 10, foodCost: 30, waterCost: 0, materialsCost: 0, energyCost: 0, pollutionEffect: -5, greeneryEffect: 10, icon: 'BookOpen', territoryTypes: ['forest-edge'] },
+    { id: 'edge-monitor', name: 'Мониторинг', energyCost: 50, moneyCost: 500, foodCost: 0, waterCost: 0, materialsCost: 0, pollutionEffect: -20, greeneryEffect: 15, icon: 'Search', territoryTypes: ['forest-edge'] },
   ];
 
   useEffect(() => {
@@ -139,7 +191,8 @@ const Index = () => {
     return getTotalResourceValue('materials') >= action.materialsCost &&
            getTotalResourceValue('food') >= action.foodCost &&
            getTotalResourceValue('water') >= action.waterCost &&
-           getTotalResourceValue('energy') >= action.energyCost;
+           getTotalResourceValue('energy') >= action.energyCost &&
+           playerCurrency >= action.moneyCost;
   };
 
   const spendResources = (type: ResourceCard['type'], amount: number) => {
@@ -166,22 +219,17 @@ const Index = () => {
     spendResources('water', action.waterCost);
     spendResources('energy', action.energyCost);
     
+    if (action.moneyCost > 0) {
+      setPlayerCurrency(prev => prev - action.moneyCost);
+    }
+    
     setTerritories(prev => prev.map(terr => {
       if (terr.id === territoryId) {
-        let newPollution = terr.pollution;
-        let newGreenery = terr.greenery;
+        const newPollution = Math.max(0, terr.pollution + action.pollutionEffect);
+        const newGreenery = Math.min(100, terr.greenery + action.greeneryEffect);
         
-        if (action.type === 'clean') {
-          newPollution = Math.max(0, terr.pollution - 30);
-          setPlayerScore(prev => prev + 20);
-        } else if (action.type === 'plant') {
-          newGreenery = Math.min(100, terr.greenery + 25);
-          setPlayerScore(prev => prev + 25);
-        } else if (action.type === 'build') {
-          newPollution = Math.max(0, terr.pollution - 20);
-          newGreenery = Math.min(100, terr.greenery + 15);
-          setPlayerScore(prev => prev + 35);
-        }
+        const baseScore = Math.abs(action.pollutionEffect) + action.greeneryEffect;
+        setPlayerScore(prev => prev + baseScore);
 
         if (newPollution <= 20 && newGreenery >= 70 && !terr.owner) {
           return { ...terr, pollution: newPollution, greenery: newGreenery, owner: 'Вы' };

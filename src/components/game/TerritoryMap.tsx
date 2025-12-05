@@ -14,14 +14,17 @@ export interface Territory {
 }
 
 export interface GameAction {
-  type: 'clean' | 'plant' | 'build';
+  id: string;
   name: string;
   materialsCost: number;
   foodCost: number;
   waterCost: number;
   energyCost: number;
-  effect: string;
+  moneyCost: number;
+  pollutionEffect: number;
+  greeneryEffect: number;
   icon: string;
+  territoryTypes: string[];
 }
 
 interface TerritoryMapProps {
@@ -126,53 +129,71 @@ export default function TerritoryMap({
         </CardContent>
       </Card>
 
-      {selectedTerritory && (
-        <Card className="bg-green-900/50 border-green-400 backdrop-blur animate-scale-in">
-          <CardHeader>
-            <CardTitle className="text-white">
-              Выберите действие: {territories.find(t => t.id === selectedTerritory)?.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {gameActions.map((action) => {
-                const canAct = canPerformAction(action);
-                return (
-                  <Button
-                    key={action.type}
-                    onClick={() => performAction(action, selectedTerritory)}
-                    disabled={!canAct}
-                    className="flex flex-col items-center gap-2 h-auto py-4 hover-scale"
-                    variant={canAct ? 'default' : 'secondary'}
-                  >
-                    <Icon name={action.icon as any} size={28} />
-                    <span className="font-bold">{action.name}</span>
-                    <span className="text-xs">{action.effect}</span>
-                    <div className="flex gap-2 mt-1 flex-wrap justify-center">
-                      <Badge variant="outline" className="text-xs">
-                        <Icon name="Hammer" size={10} className="mr-1" />
-                        {action.materialsCost}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Icon name="UtensilsCrossed" size={10} className="mr-1" />
-                        {action.foodCost}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Icon name="Droplet" size={10} className="mr-1" />
-                        {action.waterCost}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Icon name="Zap" size={10} className="mr-1" />
-                        {action.energyCost}
-                      </Badge>
-                    </div>
-                  </Button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {selectedTerritory && (() => {
+        const territory = territories.find(t => t.id === selectedTerritory);
+        const availableActions = gameActions.filter(a => a.territoryTypes.includes(territory?.type || ''));
+        
+        return (
+          <Card className="bg-green-900/50 border-green-400 backdrop-blur animate-scale-in">
+            <CardHeader>
+              <CardTitle className="text-white">
+                Выберите действие: {territory?.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {availableActions.map((action) => {
+                  const canAct = canPerformAction(action);
+                  return (
+                    <Button
+                      key={action.id}
+                      onClick={() => performAction(action, selectedTerritory)}
+                      disabled={!canAct}
+                      className="flex flex-col items-center gap-2 h-auto py-4 hover-scale"
+                      variant={canAct ? 'default' : 'secondary'}
+                    >
+                      <Icon name={action.icon as any} size={24} />
+                      <span className="font-bold text-sm text-center">{action.name}</span>
+                      <div className="flex gap-1 mt-1 flex-wrap justify-center">
+                        {action.materialsCost > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Icon name="Hammer" size={10} className="mr-1" />
+                            {action.materialsCost}
+                          </Badge>
+                        )}
+                        {action.foodCost > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Icon name="UtensilsCrossed" size={10} className="mr-1" />
+                            {action.foodCost}
+                          </Badge>
+                        )}
+                        {action.waterCost > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Icon name="Droplet" size={10} className="mr-1" />
+                            {action.waterCost}
+                          </Badge>
+                        )}
+                        {action.energyCost > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Icon name="Zap" size={10} className="mr-1" />
+                            {action.energyCost}
+                          </Badge>
+                        )}
+                        {action.moneyCost > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Icon name="CircleDollarSign" size={10} className="mr-1" />
+                            {action.moneyCost}₽
+                          </Badge>
+                        )}
+                      </div>
+                    </Button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
     </>
   );
 }
